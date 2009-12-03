@@ -30,8 +30,6 @@
 #include <errno.h>
 #include <fcntl.h>
 
-#include <cutils/sched_policy.h>
-
 #if defined(HAVE_PRCTL)
 #include <sys/prctl.h>
 #endif
@@ -3063,6 +3061,38 @@ static const int kNiceValues[10] = {
     ANDROID_PRIORITY_URGENT_DISPLAY         /* 10 (MAX_PRIORITY) */
 };
 
+int dvmChangeThreadSchedulerGroup(const char *cgroup)
+{
+#ifdef HAVE_ANDROID_OS
+    FILE *fp;
+    char path[255];
+    int rc;
+
+    sprintf(path, "/dev/cpuctl/%s/tasks", (cgroup ? cgroup : ""));
+
+    if (!(fp = fopen(path, "w"))) {
+#if ENABLE_CGROUP_ERR_LOGGING
+        LOGW("Unable to open %s (%s)\n", path, strerror(errno));
+#endif
+        return -errno;
+    }
+
+    rc = fprintf(fp, "0");
+    fclose(fp);
+
+    if (rc < 0) {
+#if ENABLE_CGROUP_ERR_LOGGING
+        LOGW("Unable to move pid %d to cgroup %s (%s)\n", getpid(),
+             (cgroup ? cgroup : "<default>"), strerror(errno));
+#endif
+    }
+
+    return (rc < 0) ? errno : 0;
+#else // HAVE_ANDROID_OS
+    return 0;
+#endif
+}
+
 /*
  * Change the priority of a system thread to match that of the Thread object.
  *
@@ -3080,10 +3110,10 @@ void dvmChangeThreadPriority(Thread* thread, int newPriority)
     }
     newNice = kNiceValues[newPriority-1];
 
-    if (newNice >= ANDROID_PRIORITY_BACKGROUND) {
-        set_sched_policy(dvmGetSysThreadId(), SP_BACKGROUND);
+    if (newPriority >= ANDROID_PRIORITY_BACKGROUND) {
+        dvmChangeThreadSchedulerGroup("bg_non_interactive");
     } else if (getpriority(PRIO_PROCESS, pid) >= ANDROID_PRIORITY_BACKGROUND) {
-        set_sched_policy(dvmGetSysThreadId(), SP_FOREGROUND);
+        dvmChangeThreadSchedulerGroup(NULL);
     }
 
     if (setpriority(PRIO_PROCESS, pid, newNice) != 0) {

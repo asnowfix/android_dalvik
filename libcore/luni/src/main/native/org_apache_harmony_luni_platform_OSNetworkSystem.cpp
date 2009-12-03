@@ -1566,7 +1566,7 @@ static void mcastAddDropMembership (JNIEnv * env, int handle, jobject optVal,
                 memset(&ipv6Request, 0, requestLength);
                 ipv6Request.ipv6mr_multiaddr =
                         ((struct sockaddr_in6 *) &sockaddrP)->sin6_addr;
-                ipv6Request.ipv6mr_interface = interfaceIndex;
+                ipv6Request.ipv6mr_ifindex = interfaceIndex;
                 multicastRequest = &ipv6Request;
                 level = SOL_IPV6;
                 break;

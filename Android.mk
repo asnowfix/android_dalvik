@@ -14,6 +14,8 @@
 
 LOCAL_PATH := $(call my-dir)
 
+WITH_JIT := false
+
 subdirs := $(addprefix $(LOCAL_PATH)/,$(addsuffix /Android.mk, \
 		libdex \
 		vm \
