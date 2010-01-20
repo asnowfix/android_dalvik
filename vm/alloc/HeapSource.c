@@ -1544,11 +1544,17 @@ dvmTrackExternalAllocation(size_t n)
             }
 
             /* The heap has been changed, let the changes take effect...make
-             * sure that other threads get allowed in to fully process the heap
-             * changes to ensure they propagate.
-            */
+             * sure that all pending garbage collection activities have
+             * been fully processed.
+             */
             dvmUnlockHeap();
-            usleep(1000);
+            dvmChangeStatus(NULL, THREAD_VMWAIT);
+            dvmLockMutex(&gDvm.heapWorkerLock);
+            /* Wake up the heap worker and wait 10 ms for it to finish. */
+            dvmSignalHeapWorker(false);
+            pthread_cond_timeout_np(&gDvm.heapWorkerIdleCond, &gDvm.heapWorkerLock, 10);
+            dvmUnlockMutex(&gDvm.heapWorkerLock);
+            dvmChangeStatus(NULL, THREAD_RUNNING); 
             dvmLockHeap();
         }
     }
