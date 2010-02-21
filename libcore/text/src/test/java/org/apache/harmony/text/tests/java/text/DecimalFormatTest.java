@@ -29,6 +29,7 @@ import junit.framework.TestCase;
 
 import tests.support.Support_BitSet;
 import tests.support.Support_DecimalFormat;
+import tests.support.Support_Locale;
 
 import java.io.ObjectInputStream;
 import java.io.IOException;
@@ -1807,9 +1808,7 @@ public class DecimalFormatTest extends TestCase {
         method = "formatToCharacterIterator",
         args = {java.lang.Object.class}
     )
-    @KnownFailure("Some locales were removed last minute in cupcake")
     public void test_formatToCharacterIteratorLjava_lang_Object() {
-
         try {
             // Regression for HARMONY-466
             new DecimalFormat().formatToCharacterIterator(null);
@@ -2438,8 +2437,12 @@ public class DecimalFormatTest extends TestCase {
         method = "!SerializationGolden",
         args = {}
     )
-    @KnownFailure("a regression. This didn't fail before")
     public void test_serializationHarmonyRICompatible() throws Exception {
+        Locale[] requiredLocales = {Locale.FRANCE};
+        if (!Support_Locale.areLocalesAvailable(requiredLocales)) {
+            // locale dependent test, bug 1943269
+            return;
+        }
         NumberFormat nf = NumberFormat.getInstance(Locale.FRANCE);
 
         DecimalFormat df = null;
