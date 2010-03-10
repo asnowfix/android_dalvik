@@ -1307,36 +1307,50 @@ dalvik_inst:
      * Compare two floating-point values.  Puts 0, 1, or -1 into the
      * destination register based on the results of the comparison.
      *
-     * int compare(x, y) {
-     *     if (x == y) {
-     *         return 0;
-     *     } else if (x > y) {
-     *         return 1;
-     *     } else if (x < y) {
-     *         return -1;
-     *     } else {
-     *         return -1;
-     *     }
-     * }
+     * Provide a "naninst" instruction that puts 1 or -1 into r1 depending
+     * on what value we'd like to return when one of the operands is NaN.
+     *
+     * The operation we're implementing is:
+     *   if (x == y)
+     *     return 0;
+     *   else if (x < y)
+     *     return -1;
+     *   else if (x > y)
+     *     return 1;
+     *   else
+     *     return {-1,1};  // one or both operands was NaN
+     *
+     * The straightforward implementation requires 3 calls to functions
+     * that return a result in r0.  We can do it with two calls if our
+     * EABI library supports __aeabi_cfcmple (only one if we want to check
+     * for NaN directly):
+     *   check x <= y
+     *     if <, return -1
+     *     if ==, return 0
+     *   check y <= x
+     *     if <, return 1
+     *   return {-1,1}
+     *
+     * for: cmpl-float, cmpg-float
      */
     /* op vAA, vBB, vCC */
     FETCH(r0, 1)                        @ r0<- CCBB
-    mov     r9, rINST, lsr #8           @ r9<- AA
     and     r2, r0, #255                @ r2<- BB
     mov     r3, r0, lsr #8              @ r3<- CC
-    VREG_INDEX_TO_ADDR(r2, r2)          @ r2<- &vBB
-    VREG_INDEX_TO_ADDR(r3, r3)          @ r3<- &vCC
-    flds    s0, [r2]                    @ s0<- vBB
-    flds    s1, [r3]                    @ s1<- vCC
-    fcmpes  s0, s1                      @ compare (vBB, vCC)
+    GET_VREG(r9, r2)                    @ r9<- vBB
+    GET_VREG(r10, r3)                   @ r10<- vCC
+    mov     r0, r9                      @ copy to arg registers
+    mov     r1, r10
+    bl      __aeabi_cfcmple             @ cmp <=: C clear if <, Z set if eq
+    bhi     .LOP_CMPL_FLOAT_gt_or_nan       @ C set and Z clear, disambiguate
+    mvncc   r1, #0                      @ (less than) r1<- -1
+    moveq   r1, #0                      @ (equal) r1<- 0, trumps less than
+.LOP_CMPL_FLOAT_finish:
+    mov     r3, rINST, lsr #8           @ r3<- AA
     FETCH_ADVANCE_INST(2)               @ advance rPC, load rINST
-    mvn     r0, #0                      @ r0<- -1 (default)
+    SET_VREG(r1, r3)                    @ vAA<- r1
     GET_INST_OPCODE(ip)                 @ extract opcode from rINST
-    fmstat                              @ export status flags
-    movgt   r0, #1                      @ (greater than) r1<- 1
-    moveq   r0, #0                      @ (equal) r1<- 0
-    b       .LOP_CMPL_FLOAT_finish          @ argh
-
+    GOTO_OPCODE(ip)                     @ jump to next instruction
 
 /* ------------------------------ */
     .balign 64
@@ -1346,35 +1360,50 @@ dalvik_inst:
      * Compare two floating-point values.  Puts 0, 1, or -1 into the
      * destination register based on the results of the comparison.
      *
-     * int compare(x, y) {
-     *     if (x == y) {
-     *         return 0;
-     *     } else if (x < y) {
-     *         return -1;
-     *     } else if (x > y) {
-     *         return 1;
-     *     } else {
-     *         return 1;
-     *     }
-     * }
+     * Provide a "naninst" instruction that puts 1 or -1 into r1 depending
+     * on what value we'd like to return when one of the operands is NaN.
+     *
+     * The operation we're implementing is:
+     *   if (x == y)
+     *     return 0;
+     *   else if (x < y)
+     *     return -1;
+     *   else if (x > y)
+     *     return 1;
+     *   else
+     *     return {-1,1};  // one or both operands was NaN
+     *
+     * The straightforward implementation requires 3 calls to functions
+     * that return a result in r0.  We can do it with two calls if our
+     * EABI library supports __aeabi_cfcmple (only one if we want to check
+     * for NaN directly):
+     *   check x <= y
+     *     if <, return -1
+     *     if ==, return 0
+     *   check y <= x
+     *     if <, return 1
+     *   return {-1,1}
+     *
+     * for: cmpl-float, cmpg-float
      */
     /* op vAA, vBB, vCC */
     FETCH(r0, 1)                        @ r0<- CCBB
-    mov     r9, rINST, lsr #8           @ r9<- AA
     and     r2, r0, #255                @ r2<- BB
     mov     r3, r0, lsr #8              @ r3<- CC
-    VREG_INDEX_TO_ADDR(r2, r2)          @ r2<- &vBB
-    VREG_INDEX_TO_ADDR(r3, r3)          @ r3<- &vCC
-    flds    s0, [r2]                    @ s0<- vBB
-    flds    s1, [r3]                    @ s1<- vCC
-    fcmpes  s0, s1                      @ compare (vBB, vCC)
+    GET_VREG(r9, r2)                    @ r9<- vBB
+    GET_VREG(r10, r3)                   @ r10<- vCC
+    mov     r0, r9                      @ copy to arg registers
+    mov     r1, r10
+    bl      __aeabi_cfcmple             @ cmp <=: C clear if <, Z set if eq
+    bhi     .LOP_CMPG_FLOAT_gt_or_nan       @ C set and Z clear, disambiguate
+    mvncc   r1, #0                      @ (less than) r1<- -1
+    moveq   r1, #0                      @ (equal) r1<- 0, trumps less than
+.LOP_CMPG_FLOAT_finish:
+    mov     r3, rINST, lsr #8           @ r3<- AA
     FETCH_ADVANCE_INST(2)               @ advance rPC, load rINST
-    mov     r0, #1                      @ r0<- 1 (default)
+    SET_VREG(r1, r3)                    @ vAA<- r1
     GET_INST_OPCODE(ip)                 @ extract opcode from rINST
-    fmstat                              @ export status flags
-    mvnmi   r0, #0                      @ (less than) r1<- -1
-    moveq   r0, #0                      @ (equal) r1<- 0
-    b       .LOP_CMPG_FLOAT_finish          @ argh
+    GOTO_OPCODE(ip)                     @ jump to next instruction
 
 
 /* ------------------------------ */
@@ -1385,36 +1414,31 @@ dalvik_inst:
      * Compare two floating-point values.  Puts 0, 1, or -1 into the
      * destination register based on the results of the comparison.
      *
-     * int compare(x, y) {
-     *     if (x == y) {
-     *         return 0;
-     *     } else if (x > y) {
-     *         return 1;
-     *     } else if (x < y) {
-     *         return -1;
-     *     } else {
-     *         return -1;
-     *     }
-     * }
+     * Provide a "naninst" instruction that puts 1 or -1 into r1 depending
+     * on what value we'd like to return when one of the operands is NaN.
+     *
+     * See OP_CMPL_FLOAT for an explanation.
+     *
+     * For: cmpl-double, cmpg-double
      */
     /* op vAA, vBB, vCC */
     FETCH(r0, 1)                        @ r0<- CCBB
-    mov     r9, rINST, lsr #8           @ r9<- AA
-    and     r2, r0, #255                @ r2<- BB
-    mov     r3, r0, lsr #8              @ r3<- CC
-    VREG_INDEX_TO_ADDR(r2, r2)          @ r2<- &vBB
-    VREG_INDEX_TO_ADDR(r3, r3)          @ r3<- &vCC
-    fldd    d0, [r2]                    @ d0<- vBB
-    fldd    d1, [r3]                    @ d1<- vCC
-    fcmped  d0, d1                      @ compare (vBB, vCC)
+    and     r9, r0, #255                @ r9<- BB
+    mov     r10, r0, lsr #8             @ r10<- CC
+    add     r9, rFP, r9, lsl #2         @ r9<- &fp[BB]
+    add     r10, rFP, r10, lsl #2       @ r10<- &fp[CC]
+    ldmia   r9, {r0-r1}                 @ r0/r1<- vBB/vBB+1
+    ldmia   r10, {r2-r3}                @ r2/r3<- vCC/vCC+1
+    bl      __aeabi_cdcmple             @ cmp <=: C clear if <, Z set if eq
+    bhi     .LOP_CMPL_DOUBLE_gt_or_nan       @ C set and Z clear, disambiguate
+    mvncc   r1, #0                      @ (less than) r1<- -1
+    moveq   r1, #0                      @ (equal) r1<- 0, trumps less than
+.LOP_CMPL_DOUBLE_finish:
+    mov     r3, rINST, lsr #8           @ r3<- AA
     FETCH_ADVANCE_INST(2)               @ advance rPC, load rINST
-    mvn     r0, #0                      @ r0<- -1 (default)
+    SET_VREG(r1, r3)                    @ vAA<- r1
     GET_INST_OPCODE(ip)                 @ extract opcode from rINST
-    fmstat                              @ export status flags
-    movgt   r0, #1                      @ (greater than) r1<- 1
-    moveq   r0, #0                      @ (equal) r1<- 0
-    b       .LOP_CMPL_DOUBLE_finish          @ argh
-
+    GOTO_OPCODE(ip)                     @ jump to next instruction
 
 /* ------------------------------ */
     .balign 64
@@ -1424,35 +1448,31 @@ dalvik_inst:
      * Compare two floating-point values.  Puts 0, 1, or -1 into the
      * destination register based on the results of the comparison.
      *
-     * int compare(x, y) {
-     *     if (x == y) {
-     *         return 0;
-     *     } else if (x < y) {
-     *         return -1;
-     *     } else if (x > y) {
-     *         return 1;
-     *     } else {
-     *         return 1;
-     *     }
-     * }
+     * Provide a "naninst" instruction that puts 1 or -1 into r1 depending
+     * on what value we'd like to return when one of the operands is NaN.
+     *
+     * See OP_CMPL_FLOAT for an explanation.
+     *
+     * For: cmpl-double, cmpg-double
      */
     /* op vAA, vBB, vCC */
     FETCH(r0, 1)                        @ r0<- CCBB
-    mov     r9, rINST, lsr #8           @ r9<- AA
-    and     r2, r0, #255                @ r2<- BB
-    mov     r3, r0, lsr #8              @ r3<- CC
-    VREG_INDEX_TO_ADDR(r2, r2)          @ r2<- &vBB
-    VREG_INDEX_TO_ADDR(r3, r3)          @ r3<- &vCC
-    fldd    d0, [r2]                    @ d0<- vBB
-    fldd    d1, [r3]                    @ d1<- vCC
-    fcmped  d0, d1                      @ compare (vBB, vCC)
+    and     r9, r0, #255                @ r9<- BB
+    mov     r10, r0, lsr #8             @ r10<- CC
+    add     r9, rFP, r9, lsl #2         @ r9<- &fp[BB]
+    add     r10, rFP, r10, lsl #2       @ r10<- &fp[CC]
+    ldmia   r9, {r0-r1}                 @ r0/r1<- vBB/vBB+1
+    ldmia   r10, {r2-r3}                @ r2/r3<- vCC/vCC+1
+    bl      __aeabi_cdcmple             @ cmp <=: C clear if <, Z set if eq
+    bhi     .LOP_CMPG_DOUBLE_gt_or_nan       @ C set and Z clear, disambiguate
+    mvncc   r1, #0                      @ (less than) r1<- -1
+    moveq   r1, #0                      @ (equal) r1<- 0, trumps less than
+.LOP_CMPG_DOUBLE_finish:
+    mov     r3, rINST, lsr #8           @ r3<- AA
     FETCH_ADVANCE_INST(2)               @ advance rPC, load rINST
-    mov     r0, #1                      @ r0<- 1 (default)
+    SET_VREG(r1, r3)                    @ vAA<- r1
     GET_INST_OPCODE(ip)                 @ extract opcode from rINST
-    fmstat                              @ export status flags
-    mvnmi   r0, #0                      @ (less than) r1<- -1
-    moveq   r0, #0                      @ (equal) r1<- 0
-    b       .LOP_CMPG_DOUBLE_finish          @ argh
+    GOTO_OPCODE(ip)                     @ jump to next instruction
 
 
 /* ------------------------------ */
@@ -8050,27 +8070,163 @@ dvmAsmSisterStart:
 
 
 /* continuation for OP_CMPL_FLOAT */
-.LOP_CMPL_FLOAT_finish:
-    SET_VREG(r0, r9)                    @ vAA<- r0
+
+    @ Test for NaN with a second comparison.  EABI forbids testing bit
+    @ patterns, and we can't represent 0x7fc00000 in immediate form, so
+    @ make the library call.
+.LOP_CMPL_FLOAT_gt_or_nan:
+    mov     r1, r9                      @ reverse order
+    mov     r0, r10
+    bl      __aeabi_cfcmple             @ r0<- Z set if eq, C clear if <
+    @bleq    common_abort
+    movcc   r1, #1                      @ (greater than) r1<- 1
+    bcc     .LOP_CMPL_FLOAT_finish
+    mvn     r1, #0                            @ r1<- 1 or -1 for NaN
+    b       .LOP_CMPL_FLOAT_finish
+
+
+#if 0       /* "clasic" form */
+    FETCH(r0, 1)                        @ r0<- CCBB
+    and     r2, r0, #255                @ r2<- BB
+    mov     r3, r0, lsr #8              @ r3<- CC
+    GET_VREG(r9, r2)                    @ r9<- vBB
+    GET_VREG(r10, r3)                   @ r10<- vCC
+    mov     r0, r9                      @ r0<- vBB
+    mov     r1, r10                     @ r1<- vCC
+    bl      __aeabi_fcmpeq              @ r0<- (vBB == vCC)
+    cmp     r0, #0                      @ equal?
+    movne   r1, #0                      @ yes, result is 0
+    bne     OP_CMPL_FLOAT_finish
+    mov     r0, r9                      @ r0<- vBB
+    mov     r1, r10                     @ r1<- vCC
+    bl      __aeabi_fcmplt              @ r0<- (vBB < vCC)
+    cmp     r0, #0                      @ less than?
+    b       OP_CMPL_FLOAT_continue
+@%break
+
+OP_CMPL_FLOAT_continue:
+    mvnne   r1, #0                      @ yes, result is -1
+    bne     OP_CMPL_FLOAT_finish
+    mov     r0, r9                      @ r0<- vBB
+    mov     r1, r10                     @ r1<- vCC
+    bl      __aeabi_fcmpgt              @ r0<- (vBB > vCC)
+    cmp     r0, #0                      @ greater than?
+    beq     OP_CMPL_FLOAT_nan               @ no, must be NaN
+    mov     r1, #1                      @ yes, result is 1
+    @ fall through to _finish
+
+OP_CMPL_FLOAT_finish:
+    mov     r3, rINST, lsr #8           @ r3<- AA
+    FETCH_ADVANCE_INST(2)               @ advance rPC, load rINST
+    SET_VREG(r1, r3)                    @ vAA<- r1
+    GET_INST_OPCODE(ip)                 @ extract opcode from rINST
     GOTO_OPCODE(ip)                     @ jump to next instruction
+
+    /*
+     * This is expected to be uncommon, so we double-branch (once to here,
+     * again back to _finish).
+     */
+OP_CMPL_FLOAT_nan:
+    mvn     r1, #0                            @ r1<- 1 or -1 for NaN
+    b       OP_CMPL_FLOAT_finish
+
+#endif
 
 
 /* continuation for OP_CMPG_FLOAT */
-.LOP_CMPG_FLOAT_finish:
-    SET_VREG(r0, r9)                    @ vAA<- r0
+
+    @ Test for NaN with a second comparison.  EABI forbids testing bit
+    @ patterns, and we can't represent 0x7fc00000 in immediate form, so
+    @ make the library call.
+.LOP_CMPG_FLOAT_gt_or_nan:
+    mov     r1, r9                      @ reverse order
+    mov     r0, r10
+    bl      __aeabi_cfcmple             @ r0<- Z set if eq, C clear if <
+    @bleq    common_abort
+    movcc   r1, #1                      @ (greater than) r1<- 1
+    bcc     .LOP_CMPG_FLOAT_finish
+    mov     r1, #1                            @ r1<- 1 or -1 for NaN
+    b       .LOP_CMPG_FLOAT_finish
+
+
+#if 0       /* "clasic" form */
+    FETCH(r0, 1)                        @ r0<- CCBB
+    and     r2, r0, #255                @ r2<- BB
+    mov     r3, r0, lsr #8              @ r3<- CC
+    GET_VREG(r9, r2)                    @ r9<- vBB
+    GET_VREG(r10, r3)                   @ r10<- vCC
+    mov     r0, r9                      @ r0<- vBB
+    mov     r1, r10                     @ r1<- vCC
+    bl      __aeabi_fcmpeq              @ r0<- (vBB == vCC)
+    cmp     r0, #0                      @ equal?
+    movne   r1, #0                      @ yes, result is 0
+    bne     OP_CMPG_FLOAT_finish
+    mov     r0, r9                      @ r0<- vBB
+    mov     r1, r10                     @ r1<- vCC
+    bl      __aeabi_fcmplt              @ r0<- (vBB < vCC)
+    cmp     r0, #0                      @ less than?
+    b       OP_CMPG_FLOAT_continue
+@%break
+
+OP_CMPG_FLOAT_continue:
+    mvnne   r1, #0                      @ yes, result is -1
+    bne     OP_CMPG_FLOAT_finish
+    mov     r0, r9                      @ r0<- vBB
+    mov     r1, r10                     @ r1<- vCC
+    bl      __aeabi_fcmpgt              @ r0<- (vBB > vCC)
+    cmp     r0, #0                      @ greater than?
+    beq     OP_CMPG_FLOAT_nan               @ no, must be NaN
+    mov     r1, #1                      @ yes, result is 1
+    @ fall through to _finish
+
+OP_CMPG_FLOAT_finish:
+    mov     r3, rINST, lsr #8           @ r3<- AA
+    FETCH_ADVANCE_INST(2)               @ advance rPC, load rINST
+    SET_VREG(r1, r3)                    @ vAA<- r1
+    GET_INST_OPCODE(ip)                 @ extract opcode from rINST
     GOTO_OPCODE(ip)                     @ jump to next instruction
+
+    /*
+     * This is expected to be uncommon, so we double-branch (once to here,
+     * again back to _finish).
+     */
+OP_CMPG_FLOAT_nan:
+    mov     r1, #1                            @ r1<- 1 or -1 for NaN
+    b       OP_CMPG_FLOAT_finish
+
+#endif
 
 
 /* continuation for OP_CMPL_DOUBLE */
-.LOP_CMPL_DOUBLE_finish:
-    SET_VREG(r0, r9)                    @ vAA<- r0
-    GOTO_OPCODE(ip)                     @ jump to next instruction
+
+    @ Test for NaN with a second comparison.  EABI forbids testing bit
+    @ patterns, and we can't represent 0x7fc00000 in immediate form, so
+    @ make the library call.
+.LOP_CMPL_DOUBLE_gt_or_nan:
+    ldmia   r10, {r0-r1}                @ reverse order
+    ldmia   r9, {r2-r3}
+    bl      __aeabi_cdcmple             @ r0<- Z set if eq, C clear if <
+    @bleq    common_abort
+    movcc   r1, #1                      @ (greater than) r1<- 1
+    bcc     .LOP_CMPL_DOUBLE_finish
+    mvn     r1, #0                            @ r1<- 1 or -1 for NaN
+    b       .LOP_CMPL_DOUBLE_finish
 
 
 /* continuation for OP_CMPG_DOUBLE */
-.LOP_CMPG_DOUBLE_finish:
-    SET_VREG(r0, r9)                    @ vAA<- r0
-    GOTO_OPCODE(ip)                     @ jump to next instruction
+
+    @ Test for NaN with a second comparison.  EABI forbids testing bit
+    @ patterns, and we can't represent 0x7fc00000 in immediate form, so
+    @ make the library call.
+.LOP_CMPG_DOUBLE_gt_or_nan:
+    ldmia   r10, {r0-r1}                @ reverse order
+    ldmia   r9, {r2-r3}
+    bl      __aeabi_cdcmple             @ r0<- Z set if eq, C clear if <
+    @bleq    common_abort
+    movcc   r1, #1                      @ (greater than) r1<- 1
+    bcc     .LOP_CMPG_DOUBLE_finish
+    mov     r1, #1                            @ r1<- 1 or -1 for NaN
+    b       .LOP_CMPG_DOUBLE_finish
 
 
 /* continuation for OP_CMP_LONG */
