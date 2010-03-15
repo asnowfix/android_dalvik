@@ -84,7 +84,7 @@ char* dexOptGenerateCacheFileName(const char* fileName, const char* subFileName)
 
     dataRoot = getenv("ANDROID_DATA");
     systemRoot = getenv("ANDROID_ROOT");
-    sdExtRoot = getenv("SD_EXT_ROOT");
+    sdExtRoot = getenv("SD_EXT_DIRECTORY");
     cacheRoot = getenv("CACHE_ROOT");
 
     /* Set some default values just in case the enviornment variables
