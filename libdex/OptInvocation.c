@@ -50,6 +50,8 @@ char* dexOptGenerateCacheFileName(const char* fileName, const char* subFileName)
     const size_t kBufLen = sizeof(nameBuf) - 1;
     const char* dataRoot;
     const char* systemRoot;
+    const char* sdExtRoot;
+    const char* cacheRoot;
     char* cp;
 
     /*
@@ -82,12 +84,33 @@ char* dexOptGenerateCacheFileName(const char* fileName, const char* subFileName)
 
     dataRoot = getenv("ANDROID_DATA");
     systemRoot = getenv("ANDROID_ROOT");
-    
-    if (systemRoot != NULL && !strncmp(absoluteFile, systemRoot, strlen(systemRoot))) 
-        dataRoot = "/cache";
-    
-    if (dataRoot == NULL) 
+    sdExtRoot = getenv("SD_EXT_DIRECTORY");
+    cacheRoot = getenv("CACHE_ROOT");
+
+    /* Set some default values just in case the enviornment variables
+     * do not exist.  This will probably never happen, but is good
+     * practice nonetheless.
+     */
+    if (dataRoot == NULL)
         dataRoot = "/data";
+
+    if (systemRoot == NULL)
+        systemRoot = "/system";
+    
+    if (sdExtRoot == NULL)
+        sdExtRoot = "/sd-ext";
+
+    if (cacheRoot == NULL)
+        cacheRoot = "/cache";
+    
+    /* Determine where to store dalvik-cache based on the
+     * location of the binary we are dexopt'ing
+     */
+    if (systemRoot != NULL && !strncmp(absoluteFile, systemRoot, strlen(systemRoot))) 
+        dataRoot = cacheRoot;
+
+    if (sdExtRoot != NULL && !strncmp(absoluteFile, sdExtRoot, strlen(sdExtRoot)))
+        dataRoot = sdExtRoot;
 
     /* Turn the path into a flat filename by replacing
      * any slashes after the first one with '@' characters.
