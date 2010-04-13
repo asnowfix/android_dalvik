@@ -5143,12 +5143,7 @@ d2i_doconv:
 
     FETCH_ADVANCE_INST(2)               @ advance rPC, load rINST
                                @ optional op; may set condition codes
-@    bl      __aeabi_fadd                              @ r0<- op, r0-r3 changed
-    fmsr	s14, r0
-    fmsr	s15, r1
-    fadds	s14, s14, s15
-    fmrs	r0, s14
-
+    bl      __aeabi_fadd                              @ r0<- op, r0-r3 changed
     GET_INST_OPCODE(ip)                 @ extract opcode from rINST
     SET_VREG(r0, r9)               @ vAA<- r0
     GOTO_OPCODE(ip)                     @ jump to next instruction
@@ -5190,12 +5185,7 @@ d2i_doconv:
 
     FETCH_ADVANCE_INST(2)               @ advance rPC, load rINST
                                @ optional op; may set condition codes
-@    bl      __aeabi_fsub                              @ r0<- op, r0-r3 changed
-    fmsr	s14, r0
-    fmsr	s15, r1
-    fsubs	s14, s14, s15
-    fmrs	r0, s14
-
+    bl      __aeabi_fsub                              @ r0<- op, r0-r3 changed
     GET_INST_OPCODE(ip)                 @ extract opcode from rINST
     SET_VREG(r0, r9)               @ vAA<- r0
     GOTO_OPCODE(ip)                     @ jump to next instruction
@@ -5237,12 +5227,7 @@ d2i_doconv:
 
     FETCH_ADVANCE_INST(2)               @ advance rPC, load rINST
                                @ optional op; may set condition codes
-@    bl      __aeabi_fmul                              @ r0<- op, r0-r3 changed
-    fmsr	s14, r0
-    fmsr	s15, r1
-    fmuls	s14, s14, s15
-    fmrs	r0, s14
-
+    bl      __aeabi_fmul                              @ r0<- op, r0-r3 changed
     GET_INST_OPCODE(ip)                 @ extract opcode from rINST
     SET_VREG(r0, r9)               @ vAA<- r0
     GOTO_OPCODE(ip)                     @ jump to next instruction
@@ -5284,12 +5269,7 @@ d2i_doconv:
 
     FETCH_ADVANCE_INST(2)               @ advance rPC, load rINST
                                @ optional op; may set condition codes
-@    bl      __aeabi_fdiv                              @ r0<- op, r0-r3 changed
-    fmsr	s14, r0
-    fmsr	s15, r1
-    fdivs	s14, s14, s15
-    fmrs	r0, s14
-
+    bl      __aeabi_fdiv                              @ r0<- op, r0-r3 changed
     GET_INST_OPCODE(ip)                 @ extract opcode from rINST
     SET_VREG(r0, r9)               @ vAA<- r0
     GOTO_OPCODE(ip)                     @ jump to next instruction
@@ -5368,10 +5348,8 @@ d2i_doconv:
     add     r9, rFP, r9, lsl #2         @ r9<- &fp[AA]
     add     r2, rFP, r2, lsl #2         @ r2<- &fp[BB]
     add     r3, rFP, r3, lsl #2         @ r3<- &fp[CC]
-@    ldmia   r2, {r0-r1}                 @ r0/r1<- vBB/vBB+1
-@    ldmia   r3, {r2-r3}                 @ r2/r3<- vCC/vCC+1
-    fldd	d6, [r2, #0]
-    fldd	d7, [r3, #0]
+    ldmia   r2, {r0-r1}                 @ r0/r1<- vBB/vBB+1
+    ldmia   r3, {r2-r3}                 @ r2/r3<- vCC/vCC+1
     .if 0
     orrs    ip, r2, r3                  @ second arg (r2-r3) is zero?
     beq     common_errDivideByZero
@@ -5379,13 +5357,9 @@ d2i_doconv:
     FETCH_ADVANCE_INST(2)               @ advance rPC, load rINST
 
                                @ optional op; may set condition codes
-@    bl      __aeabi_dadd                              @ result<- op, r0-r3 changed
-    faddd	d6, d6, d7
-
+    bl      __aeabi_dadd                              @ result<- op, r0-r3 changed
     GET_INST_OPCODE(ip)                 @ extract opcode from rINST
-@    stmia   r9, {r0,r1}     @ vAA/vAA+1<- r0/r1
-    fstd	d6, [r9, #0]
-
+    stmia   r9, {r0,r1}     @ vAA/vAA+1<- r0/r1
     GOTO_OPCODE(ip)                     @ jump to next instruction
     /* 14-17 instructions */
 
@@ -5419,10 +5393,8 @@ d2i_doconv:
     add     r9, rFP, r9, lsl #2         @ r9<- &fp[AA]
     add     r2, rFP, r2, lsl #2         @ r2<- &fp[BB]
     add     r3, rFP, r3, lsl #2         @ r3<- &fp[CC]
-@    ldmia   r2, {r0-r1}                 @ r0/r1<- vBB/vBB+1
-@    ldmia   r3, {r2-r3}                 @ r2/r3<- vCC/vCC+1
-    fldd	d6, [r2, #0]
-    fldd	d7, [r3, #0]
+    ldmia   r2, {r0-r1}                 @ r0/r1<- vBB/vBB+1
+    ldmia   r3, {r2-r3}                 @ r2/r3<- vCC/vCC+1
     .if 0
     orrs    ip, r2, r3                  @ second arg (r2-r3) is zero?
     beq     common_errDivideByZero
@@ -5430,13 +5402,9 @@ d2i_doconv:
     FETCH_ADVANCE_INST(2)               @ advance rPC, load rINST
 
                                @ optional op; may set condition codes
-@    bl      __aeabi_dsub                              @ result<- op, r0-r3 changed
-    fsubd	d6, d6, d7
-
+    bl      __aeabi_dsub                              @ result<- op, r0-r3 changed
     GET_INST_OPCODE(ip)                 @ extract opcode from rINST
-@   stmia   r9, {r0,r1}     @ vAA/vAA+1<- r0/r1
-    fstd	d6, [r9, #0]
-
+    stmia   r9, {r0,r1}     @ vAA/vAA+1<- r0/r1
     GOTO_OPCODE(ip)                     @ jump to next instruction
     /* 14-17 instructions */
 
@@ -5470,10 +5438,8 @@ d2i_doconv:
     add     r9, rFP, r9, lsl #2         @ r9<- &fp[AA]
     add     r2, rFP, r2, lsl #2         @ r2<- &fp[BB]
     add     r3, rFP, r3, lsl #2         @ r3<- &fp[CC]
-@    ldmia   r2, {r0-r1}                 @ r0/r1<- vBB/vBB+1
-@    ldmia   r3, {r2-r3}                 @ r2/r3<- vCC/vCC+1
-    fldd	d6, [r2, #0]
-    fldd	d7, [r3, #0]
+    ldmia   r2, {r0-r1}                 @ r0/r1<- vBB/vBB+1
+    ldmia   r3, {r2-r3}                 @ r2/r3<- vCC/vCC+1
     .if 0
     orrs    ip, r2, r3                  @ second arg (r2-r3) is zero?
     beq     common_errDivideByZero
@@ -5481,13 +5447,9 @@ d2i_doconv:
     FETCH_ADVANCE_INST(2)               @ advance rPC, load rINST
 
                                @ optional op; may set condition codes
-@    bl      __aeabi_dmul                              @ result<- op, r0-r3 changed
-    fmuld	d6, d6, d7
-
+    bl      __aeabi_dmul                              @ result<- op, r0-r3 changed
     GET_INST_OPCODE(ip)                 @ extract opcode from rINST
-@    stmia   r9, {r0,r1}     @ vAA/vAA+1<- r0/r1
-    fstd	d6, [r9, #0]
-
+    stmia   r9, {r0,r1}     @ vAA/vAA+1<- r0/r1
     GOTO_OPCODE(ip)                     @ jump to next instruction
     /* 14-17 instructions */
 
@@ -5521,10 +5483,8 @@ d2i_doconv:
     add     r9, rFP, r9, lsl #2         @ r9<- &fp[AA]
     add     r2, rFP, r2, lsl #2         @ r2<- &fp[BB]
     add     r3, rFP, r3, lsl #2         @ r3<- &fp[CC]
-@    ldmia   r2, {r0-r1}                 @ r0/r1<- vBB/vBB+1
-@    ldmia   r3, {r2-r3}                 @ r2/r3<- vCC/vCC+1
-    fldd	d6, [r2, #0]
-    fldd	d7, [r3, #0]
+    ldmia   r2, {r0-r1}                 @ r0/r1<- vBB/vBB+1
+    ldmia   r3, {r2-r3}                 @ r2/r3<- vCC/vCC+1
     .if 0
     orrs    ip, r2, r3                  @ second arg (r2-r3) is zero?
     beq     common_errDivideByZero
@@ -5532,13 +5492,9 @@ d2i_doconv:
     FETCH_ADVANCE_INST(2)               @ advance rPC, load rINST
 
                                @ optional op; may set condition codes
-@    bl      __aeabi_ddiv                              @ result<- op, r0-r3 changed
-    fdivd	d6, d6, d7
-
+    bl      __aeabi_ddiv                              @ result<- op, r0-r3 changed
     GET_INST_OPCODE(ip)                 @ extract opcode from rINST
-@    stmia   r9, {r0,r1}     @ vAA/vAA+1<- r0/r1
-    fstd	d6, [r9, #0]
-
+    stmia   r9, {r0,r1}     @ vAA/vAA+1<- r0/r1
     GOTO_OPCODE(ip)                     @ jump to next instruction
     /* 14-17 instructions */
 
@@ -6468,12 +6424,7 @@ d2i_doconv:
     FETCH_ADVANCE_INST(1)               @ advance rPC, load rINST
 
                                @ optional op; may set condition codes
-@    bl      __aeabi_fadd                              @ r0<- op, r0-r3 changed
-    fmsr	s14, r0
-    fmsr	s15, r1
-    fadds	s14, s14, s15
-    fmrs	r0, s14
-
+    bl      __aeabi_fadd                              @ r0<- op, r0-r3 changed
     GET_INST_OPCODE(ip)                 @ extract opcode from rINST
     SET_VREG(r0, r9)               @ vAA<- r0
     GOTO_OPCODE(ip)                     @ jump to next instruction
@@ -6513,12 +6464,7 @@ d2i_doconv:
     FETCH_ADVANCE_INST(1)               @ advance rPC, load rINST
 
                                @ optional op; may set condition codes
-@    bl      __aeabi_fsub                              @ r0<- op, r0-r3 changed
-    fmsr	s14, r0
-    fmsr	s15, r1
-    fsubs	s14, s14, s15
-    fmrs	r0, s14
-
+    bl      __aeabi_fsub                              @ r0<- op, r0-r3 changed
     GET_INST_OPCODE(ip)                 @ extract opcode from rINST
     SET_VREG(r0, r9)               @ vAA<- r0
     GOTO_OPCODE(ip)                     @ jump to next instruction
@@ -6558,12 +6504,7 @@ d2i_doconv:
     FETCH_ADVANCE_INST(1)               @ advance rPC, load rINST
 
                                @ optional op; may set condition codes
-@    bl      __aeabi_fmul                              @ r0<- op, r0-r3 changed
-    fmsr	s14, r0
-    fmsr	s15, r1
-    fmuls	s14, s14, s15
-    fmrs	r0, s14
-
+    bl      __aeabi_fmul                              @ r0<- op, r0-r3 changed
     GET_INST_OPCODE(ip)                 @ extract opcode from rINST
     SET_VREG(r0, r9)               @ vAA<- r0
     GOTO_OPCODE(ip)                     @ jump to next instruction
@@ -6603,12 +6544,7 @@ d2i_doconv:
     FETCH_ADVANCE_INST(1)               @ advance rPC, load rINST
 
                                @ optional op; may set condition codes
-@    bl      __aeabi_fdiv                              @ r0<- op, r0-r3 changed
-    fmsr	s14, r0
-    fmsr	s15, r1
-    fdivs	s14, s14, s15
-    fmrs	r0, s14
-
+    bl      __aeabi_fdiv                              @ r0<- op, r0-r3 changed
     GET_INST_OPCODE(ip)                 @ extract opcode from rINST
     SET_VREG(r0, r9)               @ vAA<- r0
     GOTO_OPCODE(ip)                     @ jump to next instruction
@@ -6682,10 +6618,8 @@ d2i_doconv:
     and     r9, r9, #15
     add     r1, rFP, r1, lsl #2         @ r1<- &fp[B]
     add     r9, rFP, r9, lsl #2         @ r9<- &fp[A]
-@    ldmia   r1, {r2-r3}                 @ r2/r3<- vBB/vBB+1
-@    ldmia   r9, {r0-r1}                 @ r0/r1<- vAA/vAA+1
-    fldd	d7, [r1, #0]
-    fldd	d6, [r9, #0]
+    ldmia   r1, {r2-r3}                 @ r2/r3<- vBB/vBB+1
+    ldmia   r9, {r0-r1}                 @ r0/r1<- vAA/vAA+1
     .if 0
     orrs    ip, r2, r3                  @ second arg (r2-r3) is zero?
     beq     common_errDivideByZero
@@ -6693,13 +6627,9 @@ d2i_doconv:
     FETCH_ADVANCE_INST(1)               @ advance rPC, load rINST
 
                                @ optional op; may set condition codes
-@    bl      __aeabi_dadd                              @ result<- op, r0-r3 changed
-    faddd	d6, d6, d7
-
+    bl      __aeabi_dadd                              @ result<- op, r0-r3 changed
     GET_INST_OPCODE(ip)                 @ extract opcode from rINST
-@    stmia   r9, {r0,r1}     @ vAA/vAA+1<- r0/r1
-    fstd	d6, [r9, #0]
-
+    stmia   r9, {r0,r1}     @ vAA/vAA+1<- r0/r1
     GOTO_OPCODE(ip)                     @ jump to next instruction
     /* 12-15 instructions */
 
@@ -6730,10 +6660,8 @@ d2i_doconv:
     and     r9, r9, #15
     add     r1, rFP, r1, lsl #2         @ r1<- &fp[B]
     add     r9, rFP, r9, lsl #2         @ r9<- &fp[A]
-@    ldmia   r1, {r2-r3}                 @ r2/r3<- vBB/vBB+1
-@    ldmia   r9, {r0-r1}                 @ r0/r1<- vAA/vAA+1
-    fldd	d7, [r1, #0]
-    fldd	d6, [r9, #0]
+    ldmia   r1, {r2-r3}                 @ r2/r3<- vBB/vBB+1
+    ldmia   r9, {r0-r1}                 @ r0/r1<- vAA/vAA+1
     .if 0
     orrs    ip, r2, r3                  @ second arg (r2-r3) is zero?
     beq     common_errDivideByZero
@@ -6741,13 +6669,9 @@ d2i_doconv:
     FETCH_ADVANCE_INST(1)               @ advance rPC, load rINST
 
                                @ optional op; may set condition codes
-@    bl      __aeabi_dsub                              @ result<- op, r0-r3 changed
-    fsubd	d6, d6, d7
-
+    bl      __aeabi_dsub                              @ result<- op, r0-r3 changed
     GET_INST_OPCODE(ip)                 @ extract opcode from rINST
-@    stmia   r9, {r0,r1}     @ vAA/vAA+1<- r0/r1
-    fstd	d6, [r9, #0]
-
+    stmia   r9, {r0,r1}     @ vAA/vAA+1<- r0/r1
     GOTO_OPCODE(ip)                     @ jump to next instruction
     /* 12-15 instructions */
 
@@ -6778,10 +6702,8 @@ d2i_doconv:
     and     r9, r9, #15
     add     r1, rFP, r1, lsl #2         @ r1<- &fp[B]
     add     r9, rFP, r9, lsl #2         @ r9<- &fp[A]
-@    ldmia   r1, {r2-r3}                 @ r2/r3<- vBB/vBB+1
-@    ldmia   r9, {r0-r1}                 @ r0/r1<- vAA/vAA+1
-    fldd	d7, [r1, #0]
-    fldd	d6, [r9, #0]
+    ldmia   r1, {r2-r3}                 @ r2/r3<- vBB/vBB+1
+    ldmia   r9, {r0-r1}                 @ r0/r1<- vAA/vAA+1
     .if 0
     orrs    ip, r2, r3                  @ second arg (r2-r3) is zero?
     beq     common_errDivideByZero
@@ -6789,13 +6711,9 @@ d2i_doconv:
     FETCH_ADVANCE_INST(1)               @ advance rPC, load rINST
 
                                @ optional op; may set condition codes
-@    bl      __aeabi_dmul                              @ result<- op, r0-r3 changed
-    fmuld	d6, d6, d7
-
+    bl      __aeabi_dmul                              @ result<- op, r0-r3 changed
     GET_INST_OPCODE(ip)                 @ extract opcode from rINST
-@    stmia   r9, {r0,r1}     @ vAA/vAA+1<- r0/r1
-    fstd	d6, [r9, #0]
-
+    stmia   r9, {r0,r1}     @ vAA/vAA+1<- r0/r1
     GOTO_OPCODE(ip)                     @ jump to next instruction
     /* 12-15 instructions */
 
@@ -6826,10 +6744,8 @@ d2i_doconv:
     and     r9, r9, #15
     add     r1, rFP, r1, lsl #2         @ r1<- &fp[B]
     add     r9, rFP, r9, lsl #2         @ r9<- &fp[A]
-@    ldmia   r1, {r2-r3}                 @ r2/r3<- vBB/vBB+1
-@    ldmia   r9, {r0-r1}                 @ r0/r1<- vAA/vAA+1
-    fldd	d7, [r1, #0]
-    fldd	d6, [r9, #0]
+    ldmia   r1, {r2-r3}                 @ r2/r3<- vBB/vBB+1
+    ldmia   r9, {r0-r1}                 @ r0/r1<- vAA/vAA+1
     .if 0
     orrs    ip, r2, r3                  @ second arg (r2-r3) is zero?
     beq     common_errDivideByZero
@@ -6837,13 +6753,9 @@ d2i_doconv:
     FETCH_ADVANCE_INST(1)               @ advance rPC, load rINST
 
                                @ optional op; may set condition codes
-@    bl      __aeabi_ddiv                              @ result<- op, r0-r3 changed
-    fdivd	d6, d6, d7
-
+    bl      __aeabi_ddiv                              @ result<- op, r0-r3 changed
     GET_INST_OPCODE(ip)                 @ extract opcode from rINST
-@    stmia   r9, {r0,r1}     @ vAA/vAA+1<- r0/r1
-    fstd	d6, [r9, #0]
-
+    stmia   r9, {r0,r1}     @ vAA/vAA+1<- r0/r1
     GOTO_OPCODE(ip)                     @ jump to next instruction
     /* 12-15 instructions */
 
